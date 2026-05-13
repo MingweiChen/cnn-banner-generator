@@ -6,7 +6,7 @@ CNN-style Banner Generator
 特性：
 - 底部半透明深色 banner
 - 左侧红色竖条装饰
-- 主标题支持部分高亮（黄色）
+- 主标题支持部分高亮（黄色），自动截断过长标题
 - 副标题支持竖线分隔
 - 可配置字体、颜色、间距等参数
 - 支持 2.35:1 宽屏比例裁切
@@ -44,6 +44,11 @@ class BannerConfig:
     # 红色条宽度
     red_bar_width = 12
     text_left_margin = 30   # 文字左侧边距（红色条右边）
+    text_right_margin = 30  # 文字右侧边距
+    
+    # 截断设置
+    title_max_chars = 18    # 主标题最大字符数（超过自动截断）
+    subtitle_max_chars = 35 # 副标题最大字符数
 
 
 def draw_text_with_spacing(draw, pos, text, font, fill, spacing=6):
@@ -54,6 +59,51 @@ def draw_text_with_spacing(draw, pos, text, font, fill, spacing=6):
         bbox = draw.textbbox((x, y), char, font=font)
         x = bbox[2] + spacing
     return x
+
+
+def calculate_text_width(draw, text, font, spacing=6):
+    """计算带字间距的文字总宽度"""
+    total_width = 0
+    for i, char in enumerate(text):
+        bbox = draw.textbbox((0, 0), char, font=font)
+        char_width = bbox[2] - bbox[0]
+        total_width += char_width
+        if i < len(text) - 1:
+            total_width += spacing
+    return total_width
+
+
+def truncate_title_parts(title_parts, max_chars):
+    """截断主标题，保持高亮结构"""
+    # 计算总字符数
+    total_chars = sum(len(text) for text, _ in title_parts)
+    
+    if total_chars <= max_chars:
+        return title_parts
+    
+    # 需要截断
+    result = []
+    chars_remaining = max_chars - 2  # 留2个字符给省略号
+    
+    for text, color_type in title_parts:
+        if chars_remaining <= 0:
+            break
+        if len(text) <= chars_remaining:
+            result.append((text, color_type))
+            chars_remaining -= len(text)
+        else:
+            # 截断这一段
+            result.append((text[:chars_remaining] + "…", color_type))
+            break
+    
+    return result
+
+
+def truncate_subtitle(subtitle, max_chars):
+    """截断副标题"""
+    if len(subtitle) <= max_chars:
+        return subtitle
+    return subtitle[:max_chars-1] + "…"
 
 
 def crop_to_ratio(img, target_ratio):
@@ -127,6 +177,10 @@ def add_banner(
     img = Image.open(input_path).convert("RGBA")
     img = crop_to_ratio(img, config.aspect_ratio)
     width, height = img.size
+    
+    # 截断过长的标题
+    title_parts = truncate_title_parts(title_parts, config.title_max_chars)
+    subtitle = truncate_subtitle(subtitle, config.subtitle_max_chars)
     
     # 计算 banner 高度
     banner_height = (
@@ -203,6 +257,8 @@ def main():
     parser.add_argument("--title-font", help="主标题字体路径")
     parser.add_argument("--subtitle-font", help="副标题字体路径")
     parser.add_argument("--opacity", help="Banner不透明度 (0-100)", type=int, default=50)
+    parser.add_argument("--max-title", help="主标题最大字符数", type=int, default=18)
+    parser.add_argument("--max-subtitle", help="副标题最大字符数", type=int, default=35)
     
     args = parser.parse_args()
     
@@ -215,10 +271,12 @@ def main():
         color_type = "highlight" if i in highlight_indices else "white"
         title_parts.append((text, color_type))
     
-    # 配置透明度
+    # 配置
     config = BannerConfig()
     alpha = int(args.opacity * 255 / 100)
     config.banner_bg = (5, 10, 20, alpha)
+    config.title_max_chars = args.max_title
+    config.subtitle_max_chars = args.max_subtitle
     
     add_banner(
         args.input,
