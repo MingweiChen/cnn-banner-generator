@@ -4,7 +4,7 @@
 
 ## 特性
 
-- 🎨 底部半透明深色 banner
+- 🎨 底部半透明深色 banner（可调透明度）
 - 🔴 左侧红色竖条装饰
 - ✨ 主标题支持部分高亮（黄色）
 - 📝 副标题支持竖线分隔
@@ -35,6 +35,9 @@ python banner_generator.py input.png -o output.png \
   -t "今日|头条|新闻" \
   --highlight "1"
 
+# 调整透明度（0-100，默认50）
+python banner_generator.py input.png -o output.png --opacity 70
+
 # 使用自定义字体
 python banner_generator.py input.png -o output.png \
   --title-font fonts/SourceHanSansSC-Bold.otf \
@@ -62,6 +65,7 @@ add_banner(
 config = BannerConfig()
 config.title_font_size = 90
 config.bottom_margin = 120
+config.banner_bg = (5, 10, 20, 180)     # 调整透明度
 config.highlight_color = (255, 180, 0)  # 更深的黄色
 
 add_banner(
@@ -83,9 +87,11 @@ add_banner(
 | `title_spacing` | 6 | 主标题字间距 |
 | `subtitle_spacing` | 3 | 副标题字间距 |
 | `title_sub_gap` | 30 | 主副标题间距 |
-| `banner_padding` | 30 | banner 内边距 |
+| `top_padding` | 30 | banner 顶部内边距 |
+| `bottom_padding` | 50 | banner 底部内边距 |
 | `bottom_margin` | 100 | 底部留白 |
 | `red_bar_width` | 12 | 红色条宽度 |
+| `banner_bg` | (5,10,20,128) | Banner背景色 RGBA (50%不透明度) |
 
 ## 推荐字体
 

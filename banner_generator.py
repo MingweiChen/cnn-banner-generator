@@ -30,11 +30,12 @@ class BannerConfig:
     title_spacing = 6       # 主标题字间距
     subtitle_spacing = 3    # 副标题字间距
     title_sub_gap = 30      # 主副标题行间距（= 副标题字号）
-    banner_padding = 30     # banner 内边距
+    top_padding = 30        # banner 顶部内边距
+    bottom_padding = 50     # banner 底部内边距
     bottom_margin = 100     # 底部留白
     
     # 颜色 (RGBA)
-    banner_bg = (5, 10, 20, 230)        # 深色半透明背景
+    banner_bg = (5, 10, 20, 128)        # 深色半透明背景 (50%不透明度)
     red_bar = (220, 30, 30, 255)        # 左侧红色条
     title_color = (255, 255, 255)       # 主标题白色
     highlight_color = (255, 210, 0)     # 高亮黄色
@@ -129,11 +130,11 @@ def add_banner(
     
     # 计算 banner 高度
     banner_height = (
-        config.banner_padding + 
+        config.top_padding + 
         config.title_font_size + 
         config.title_sub_gap + 
         config.subtitle_font_size + 
-        config.banner_padding
+        config.bottom_padding
     )
     
     banner_top = height - config.bottom_margin - banner_height
@@ -161,7 +162,7 @@ def add_banner(
     draw = ImageDraw.Draw(img_with_overlay)
     
     # 文字位置
-    title_y = banner_top + config.banner_padding
+    title_y = banner_top + config.top_padding
     sub_y = title_y + config.title_font_size + config.title_sub_gap
     
     # 绘制主标题
@@ -201,6 +202,7 @@ def main():
     parser.add_argument("--highlight", help="高亮部分索引（从0开始，逗号分隔）", default="1")
     parser.add_argument("--title-font", help="主标题字体路径")
     parser.add_argument("--subtitle-font", help="副标题字体路径")
+    parser.add_argument("--opacity", help="Banner不透明度 (0-100)", type=int, default=50)
     
     args = parser.parse_args()
     
@@ -213,11 +215,17 @@ def main():
         color_type = "highlight" if i in highlight_indices else "white"
         title_parts.append((text, color_type))
     
+    # 配置透明度
+    config = BannerConfig()
+    alpha = int(args.opacity * 255 / 100)
+    config.banner_bg = (5, 10, 20, alpha)
+    
     add_banner(
         args.input,
         args.output,
         title_parts,
         args.subtitle,
+        config=config,
         title_font_path=args.title_font,
         subtitle_font_path=args.subtitle_font,
     )
